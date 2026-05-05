@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khoroch — Personal Finance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─────────────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────────────── */
+:root {
+  /* Color — improved contrast */
+  --c-bg:          #F6F6F3;
+  --c-surface:     #FFFFFF;
+  --c-raised:      #EFEDE8;
+  --c-border:      #E3E1DD;
+  --c-border-dark: #CFCBC6;
+
+  --c-text:        #181818;
+  --c-text-2:      #4F4F4F;
+  --c-text-3:      #7A7A7A;
+
+  --c-accent:      #E2136E;
+  --c-accent-dim:  #FCEAF3;
+
+  --c-green:       #2F7A57;
+  --c-green-dim:   #E8F5EF;
+  --c-amber:       #A06418;
+  --c-amber-dim:   #FDF3E3;
+  --c-blue:        #2D52CC;
+  --c-blue-dim:    #EEF1FF;
+  --c-plum:        #6B3553;
+
+  /* Radius */
+  --r-sm: 8px;
+  --r:    12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  /* Shadow — kept very soft */
+  --sh-xs: 0 1px 2px rgba(0,0,0,.05);
+  --sh-sm: 0 1px 4px rgba(0,0,0,.07);
+  --sh:    0 4px 12px rgba(0,0,0,.08);
+  --sh-lg: 0 8px 28px rgba(0,0,0,.10);
+
+  /* Layout */
+  --sidebar: 220px;
+  --aside:   284px;
+  --font:    'Inter', 'Hind Siliguri', sans-serif;
+
+  /* Fluid spacing */
+  --pad-x: clamp(16px, 3vw, 32px);
+  --pad-y: clamp(16px, 3vw, 24px);
+}
+
+/* ─────────────────────────────────────────────────
+   RESET
+───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font);
+  background: var(--c-bg);
+  color: var(--c-text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+a { text-decoration: none; color: inherit; }
+button, select { font-family: var(--font); cursor: pointer; }
+input { font-family: var(--font); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--c-border-dark); border-radius: 4px; }
+
+/* ─────────────────────────────────────────────────
+   PAGE SYSTEM
+───────────────────────────────────────────────── */
+.pg { display: none; }
+.pg.on { display: block; }
+
+.app { display: none; }
+.app.on {
+  display: grid;
+  grid-template-columns: var(--sidebar) 1fr;
+  min-height: 100vh;
+}
+
+.inner { display: none; }
+.inner.on { display: block; animation: rise .22s ease; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─────────────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────────────── */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: var(--sidebar);
+  background: var(--c-surface);
+  border-right: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.sb-logo {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-box {
+  width: 30px; height: 30px;
+  background: var(--c-accent);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.logo-name { font-size: 16px; font-weight: 700; letter-spacing: -.4px; }
+
+.sb-nav {
+  flex: 1;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+}
+
+.sb-sect {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  padding: 12px 8px 4px;
+}
+
+.sb-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--c-text-2);
+  transition: background .12s, color .12s;
+}
+.sb-btn:hover { background: var(--c-raised); color: var(--c-text); }
+.sb-btn.on    { background: var(--c-accent-dim); color: var(--c-accent); font-weight: 600; }
+.sb-btn svg   { flex-shrink: 0; opacity: .8; }
+.sb-btn.on svg { opacity: 1; }
+
+.sb-badge {
+  margin-left: auto;
+  background: var(--c-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9px;
+}
+
+.sb-footer {
+  border-top: 1px solid var(--c-border);
+  padding: 12px 10px;
+}
+
+.sb-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background .12s;
+}
+.sb-user:hover { background: var(--c-raised); }
+
+.u-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-accent), var(--c-plum));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.u-name  { font-size: 13px; font-weight: 600; }
+.u-phone { font-size: 11px; color: var(--c-text-3); }
+
+/* Sync strip */
+.sync-strip {
+  padding: 7px 10px;
+  border-top: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--c-text-3);
+}
+.sync-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--c-green);
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────
+   MAIN CONTENT
+───────────────────────────────────────────────── */
+.main {
+  margin-left: 0;
+  min-height: 100vh;
+  min-width: 0;
+  background: var(--c-bg);
+}
+
+/* ─────────────────────────────────────────────────
+   TOPBAR
+───────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--pad-y) var(--pad-x) 0;
+  gap: 16px;
+}
+
+.tb-title { font-size: 21px; font-weight: 700; letter-spacing: -.5px; }
+.tb-sub   { font-size: 13px; color: var(--c-text-3); margin-top: 2px; }
+.tb-acts  { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  white-space: nowrap;
+  transition: background .12s, opacity .12s;
+}
+.btn-primary { background: var(--c-accent); color: #fff; }
+.btn-primary:hover { opacity: .88; }
+.btn-ghost {
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border);
+}
+.btn-ghost:hover { background: var(--c-raised); color: var(--c-text); }
+.btn-lg   { padding: 12px 22px; font-size: 15px; border-radius: var(--r); }
+.btn-full { width: 100%; justify-content: center; }
+.btn-white { background: #fff; color: var(--c-text); font-weight: 600; }
+.btn-white:hover { background: #f1f0ec; }
+
+/* ─────────────────────────────────────────────────
+   CARD SYSTEM
+───────────────────────────────────────────────── */
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+}
+.card-p  { padding: 24px; }
+.card-ps { padding: 16px 20px; }
+
+/* section-level label above a group */
+.group-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ─────────────────────────────────────────────────
+   DASHBOARD LAYOUT
+───────────────────────────────────────────────── */
+.dash-wrap {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  padding: var(--pad-y) var(--pad-x);
+}
+.dash-main  { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.dash-aside { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+
+/* ─────────────────────────────────────────────────
+   STATUS CARD (ROW 1 — Primary centerpiece)
+───────────────────────────────────────────────── */
+.status-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+  padding: 28px;
+  box-shadow: var(--sh-sm);
+}
+
+.sc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.sc-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  margin-bottom: 10px;
+}
+
+.sc-amount {
+  font-size: clamp(26px, 5vw, 38px);
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+.sc-amount .tk { font-size: 24px; font-weight: 500; }
+
+.sc-bn {
+  font-family: 'Hind Siliguri', sans-serif;
+  font-size: 13px;
+  color: var(--c-text-3);
+  margin-top: 7px;
+}
+
+.sc-pace {
+  font-size: 13.5px;
+  color: var(--c-text-2);
+  line-height: 1.6;
+  margin-top: 10px;
+}
+.sc-pace strong { color: var(--c-text); font-weight: 600; }
+
+/* badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-ok   { background: var(--c-green-dim); color: var(--c-green); }
+.badge-warn { background: var(--c-amber-dim); color: var(--c-amber); }
+.badge-muted { background: var(--c-raised); color: var(--c-text-3); font-size: 11px; }
+
+/* progress */
+.prog-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--c-text-3);
+  margin-bottom: 8px;
+}
+.prog-labels span { font-weight: 600; color: var(--c-text-2); }
+
+.prog-track {
+  height: 6px;
+  background: var(--c-raised);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width .8s ease;
+}
+.pf-accent  { background: var(--c-accent); }
+.pf-green   { background: var(--c-green); }
+.pf-amber   { background: var(--c-amber); }
+
+.sc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 16px;
+  padding-top: 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--c-border);
+}
+.stat { text-align: center; }
+.stat-lbl { font-size: 11px; color: var(--c-text-3); font-weight: 500; }
+.stat-val { font-size: 18px; font-weight: 700; letter-spacing: -.4px; margin-top: 4px; }
+
+/* ─────────────────────────────────────────────────
+   SAFE-TO-SPEND (unique dark card)
+───────────────────────────────────────────────── */
+.safe-card {
+  background: var(--c-text);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.safe-lbl  { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: rgba(255,255,255,.45); margin-bottom: 8px; }
+.safe-amt  { font-size: 30px; font-weight: 700; letter-spacing: -1px; color: #fff; line-height: 1; }
+.safe-sub  { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 6px; }
+.safe-icon { width: 44px; height: 44px; background: rgba(255,255,255,.08); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────────
+   CATEGORY CARDS (ROW 2)
+───────────────────────────────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.cat-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: 18px;
+  box-shadow: var(--sh-xs);
+  transition: box-shadow .15s;
+}
+.cat-card:hover { box-shadow: var(--sh-sm); }
+
+.cat-ico {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+
+.cat-name   { font-size: 12px; color: var(--c-text-3); font-weight: 500; }
+.cat-amt    { font-size: 20px; font-weight: 700; letter-spacing: -.5px; margin-top: 4px; }
+.cat-delta  { display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; margin-top: 4px; }
+.delta-up   { color: var(--c-accent); }
+.delta-dn   { color: var(--c-green); }
+
+.cat-bar { height: 3px; background: var(--c-raised); border-radius: 100px; margin-top: 10px; overflow: hidden; }
+.cat-bar-f { height: 100%; border-radius: 100px; }
+
+/* ─────────────────────────────────────────────────
+   TRANSACTION LIST
+───────────────────────────────────────────────── */
+.txn-date-hdr {
+  padding: 9px 24px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.txn-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 24px;
+  border-bottom: 1px solid var(--c-border);
+  cursor: pointer;
+  transition: background .1s;
+}
+
+@media (max-width: 600px) {
+  .txn-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .txn-right {
+    align-self: flex-end;
+  }
+}
+.txn-row:last-child { border-bottom: none; }
+.txn-row:hover { background: var(--c-bg); }
+
+.merch-ico {
+  width: 38px; height: 38px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.05);
+}
+
+.txn-body { flex: 1; min-width: 0; }
+.txn-name { font-size: 13.5px; font-weight: 500; }
+.txn-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+
+.cat-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+.recur-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--c-blue-dim);
+  color: var(--c-blue);
+}
+
+.txn-right { text-align: right; flex-shrink: 0; }
+.txn-amt  { font-size: 14px; font-weight: 600; }
+.txn-time { font-size: 11px; color: var(--c-text-3); margin-top: 2px; }
+
+/* ─────────────────────────────────────────────────
+   ASIDE — INSIGHT CARDS
+───────────────────────────────────────────────── */
+.insight-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  box-shadow: var(--sh-xs);
+}
+
+.i-type {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.i-text { font-size: 13px; color: var(--c-text-2); line-height: 1.6; }
+.i-text strong { color: var(--c-text); font-weight: 600; }
+.i-link { display: inline-block; font-size: 12px; font-weight: 600; color: var(--c-accent); margin-top: 10px; cursor: pointer; }
+
+/* Balance card */
+.bal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 13px;
+}
+.bal-row:last-child { border-bottom: none; }
+.bal-lbl { color: var(--c-text-2); }
+.bal-val { font-weight: 700; font-size: 15px; }
+
+/* ─────────────────────────────────────────────────
+   ANALYTICS PAGE
+───────────────────────────────────────────────── */
+.analytics-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: var(--pad-y) var(--pad-x);
+}
+
+.chart-card canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+.chart-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--sh-xs);
+  min-width: 0;
+}
+.chart-card.full { grid-column: 1 / -1; }
+
+.ch-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.ch-title { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+.ch-desc  { font-size: 12px; color: var(--c-text-3); margin-top: 3px; }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; }
+.leg-i  { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--c-text-3); }
+.leg-d  { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ─────────────────────────────────────────────────
+   GOALS PAGE
+───────────────────────────────────────────────── */
+.goals-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  padding: var(--pad-y) var(--pad-x);
+}
+
+.goal-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--sh-xs);
+}
+
+.goal-ring-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+
+.goal-ring {
+  position: relative;
+  width: clamp(72px, 20vw, 92px);
+  height: clamp(72px, 20vw, 92px);
+}
+.goal-ring svg { display: block; transform: rotate(-90deg); }
+.goal-ring-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.g-pct { font-size: 19px; font-weight: 700; letter-spacing: -.5px; }
+.g-lbl { font-size: 10px; color: var(--c-text-3); }
+
+.g-name { font-size: 15px; font-weight: 600; text-align: center; }
+.g-meta { display: flex; justify-content: space-between; padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--c-border); }
+.gm-lbl { font-size: 11px; color: var(--c-text-3); }
+.gm-val { font-size: 14px; font-weight: 600; margin-top: 2px; }
+
+.g-bar { height: 5px; background: var(--c-raised); border-radius: 100px; margin-top: 14px; overflow: hidden; }
+.g-bar-f { height: 100%; border-radius: 100px; }
+
+/* ─────────────────────────────────────────────────
+   TRANSACTIONS PAGE
+───────────────────────────────────────────────── */
+.txn-page { padding: var(--pad-y) var(--pad-x); }
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--sh-xs);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+.f-search {
+  flex: 1;
+  min-width: 180px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--c-text);
+  outline: none;
+}
+.f-search::placeholder { color: var(--c-text-3); }
+.f-sep { width: 1px; height: 18px; background: var(--c-border); flex-shrink: 0; }
+
+.chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--c-accent); color: var(--c-accent); }
+.chip.on    { background: var(--c-accent-dim); color: var(--c-accent); border-color: transparent; }
+
+/* ─────────────────────────────────────────────────
+   SETTINGS PAGE
+───────────────────────────────────────────────── */
+.settings-wrap { padding: var(--pad-y) var(--pad-x); }
+.settings-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .sg-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.sg {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--sh-xs);
+  margin-bottom: 20px;
+}
+
+.sg-head {
+  padding: 15px 22px;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--c-text-2);
+}
+
+.sg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--c-border);
+  gap: 16px;
+}
+.sg-row:last-child { border-bottom: none; }
+
+.sg-lbl  { font-size: 14px; font-weight: 500; }
+.sg-desc { font-size: 12px; color: var(--c-text-3); margin-top: 2px; }
+
+.toggle {
+  width: 38px; height: 21px;
+  background: var(--c-border-dark);
+  border-radius: 11px;
+  position: relative;
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  transition: transform .2s;
+}
+.toggle.on { background: var(--c-accent); }
+.toggle.on::after { transform: translateX(17px); }
+
+.budget-fld {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--c-border);
+  border-radius: 7px;
+  padding: 6px 12px;
+  background: var(--c-bg);
+  width: 110px;
+  flex-shrink: 0;
+}
+.budget-sym { font-size: 13px; color: var(--c-text-3); }
+.budget-inp {
+  border: none; background: none;
+  font-size: 14px; font-weight: 600;
+  color: var(--c-text); outline: none; width: 70px;
+}
+
+/* ─────────────────────────────────────────────────
+   LANDING PAGE
+───────────────────────────────────────────────── */
+.land-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 56px;
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
+  position: sticky; top: 0; z-index: 50;
+}
+
+.land-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 56px;
+  padding: 72px 56px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  background: var(--c-accent-dim);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-accent);
+  margin-bottom: 20px;
+}
+
+.hero-h1 {
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  line-height: 1.1;
+  margin-bottom: 18px;
+}
+.hero-h1 em { font-style: normal; color: var(--c-accent); }
+
+.hero-sub {
+  font-size: 17px;
+  color: var(--c-text-2);
+  line-height: 1.65;
+  max-width: 420px;
+  margin-bottom: 32px;
+}
+.hero-ctas { display: flex; gap: 10px; align-items: center; }
+
+.hero-note {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--c-text-3); margin-top: 14px;
+}
+
+/* Preview */
+.prev-shell {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-lg);
+  overflow: hidden;
+}
+.prev-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 18px;
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
+}
+.prev-dots { display: flex; gap: 5px; }
+.prev-dot  { width: 9px; height: 9px; border-radius: 50%; }
+.prev-body { padding: 20px; }
+.prev-lbl  { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--c-text-3); }
+.prev-amt  { font-size: 32px; font-weight: 700; letter-spacing: -1.5px; margin-top: 4px; }
+.prev-sub  { font-size: 12px; color: var(--c-text-3); margin-bottom: 14px; margin-top: 2px; }
+.prev-prog { height: 5px; background: var(--c-raised); border-radius: 100px; overflow: hidden; margin-bottom: 16px; }
+.prev-fill { height: 100%; background: var(--c-accent); border-radius: 100px; width: 62%; }
+.prev-cats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.prev-cat  { background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 9px; padding: 11px; }
+.prev-clbl { font-size: 10px; color: var(--c-text-3); font-weight: 500; }
+.prev-camt { font-size: 14px; font-weight: 700; margin-top: 3px; }
+.prev-cbar { height: 3px; background: var(--c-border); border-radius: 100px; margin-top: 7px; overflow: hidden; }
+.prev-cf   { height: 100%; border-radius: 100px; }
+
+/* Trust */
+.trust-strip {
+  border-top: 1px solid var(--c-border);
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
+  padding: 20px 56px;
+}
+.trust-inner {
+  display: flex; justify-content: center; gap: 48px;
+  flex-wrap: wrap; max-width: 860px; margin: 0 auto;
+}
+.trust-i {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13.5px; font-weight: 500; color: var(--c-text-2);
+}
+.trust-ico {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  background: var(--c-raised);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Features */
+.feat-section { padding: 64px 56px; max-width: 1120px; margin: 0 auto; }
+.sect-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--c-accent); margin-bottom: 10px; }
+.sect-h2 { font-size: 32px; font-weight: 700; letter-spacing: -1px; margin-bottom: 36px; max-width: 400px; }
+
+.feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
+.feat-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  box-shadow: var(--sh-xs);
+  transition: box-shadow .15s, transform .15s;
+}
+.feat-card:hover { box-shadow: var(--sh-sm); transform: translateY(-1px); }
+
+.feat-ico { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.feat-nm  { font-size: 14px; font-weight: 600; margin-bottom: 7px; }
+.feat-dc  { font-size: 13.5px; color: var(--c-text-2); line-height: 1.6; }
+
+/* CTA */
+.cta-band {
+  background: var(--c-text);
+  margin: 0 56px 64px;
+  border-radius: var(--r-xl);
+  padding: 56px;
+  text-align: center;
+  color: #fff;
+}
+.cta-h { font-size: 32px; font-weight: 700; letter-spacing: -1px; margin-bottom: 12px; }
+.cta-s { font-size: 17px; color: rgba(255,255,255,.5); margin-bottom: 28px; }
+
+.land-foot {
+  padding: 20px 56px;
+  border-top: 1px solid var(--c-border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; color: var(--c-text-3);
+  flex-wrap: wrap; gap: 12px;
+}
+
+/* ─────────────────────────────────────────────────
+   AUTH + CONNECT
+───────────────────────────────────────────────── */
+.ctr-pg {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-bg);
+  padding: 24px;
+}
+
+.auth-box {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+  padding: 40px;
+  width: 100%;
+  max-width: 396px;
+  box-shadow: var(--sh-lg);
+  animation: rise .28s ease;
+}
+
+.f-lbl { display: block; font-size: 13px; font-weight: 500; color: var(--c-text-2); margin-bottom: 6px; }
+
+.f-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  background: var(--c-bg);
+  color: var(--c-text);
+  outline: none;
+  transition: border-color .15s;
+}
+.f-input:focus { border-color: var(--c-accent); background: #fff; }
+
+.f-group {
+  display: flex;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.f-group:focus-within { border-color: var(--c-accent); background: #fff; }
+
+.f-pfx {
+  padding: 11px 12px;
+  font-size: 13px;
+  color: var(--c-text-3);
+  border-right: 1px solid var(--c-border);
+  white-space: nowrap;
+}
+.f-group input {
+  flex: 1; border: none; background: none;
+  padding: 11px 14px; font-size: 14px;
+  color: var(--c-text); outline: none;
+}
+.f-mb { margin-bottom: 14px; }
+
+.auth-sep { text-align: center; font-size: 13px; color: var(--c-text-3); margin: 18px 0; position: relative; }
+.auth-sep::before, .auth-sep::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: var(--c-border); }
+.auth-sep::before { left: 0; }
+.auth-sep::after  { right: 0; }
+
+/* Connect */
+.conn-box {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--sh-lg);
+  overflow: hidden;
+  animation: rise .28s ease;
+}
+
+.step-dots { display: flex; gap: 5px; margin-bottom: 18px; }
+.sd { flex: 1; height: 3px; border-radius: 100px; background: var(--c-border); transition: background .3s; }
+.sd.done { background: var(--c-accent); }
+.sd.cur  { background: var(--c-accent); opacity: .5; }
+
+.conn-head { padding: 22px 26px; background: var(--c-bg); border-bottom: 1px solid var(--c-border); }
+.conn-body { padding: 22px 26px; }
+.conn-foot { padding: 18px 26px; border-top: 1px solid var(--c-border); }
+
+.conn-step { display: none; }
+.conn-step.on { display: block; }
+
+.perm-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.perm-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  color: var(--c-text-2);
+  background: var(--c-bg);
+}
+.perm-ico { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+.sync-list { display: flex; flex-direction: column; gap: 2px; margin: 14px 0; }
+.sync-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--c-text-3);
+  border-bottom: 1px solid var(--c-border);
+}
+.sync-item:last-child { border-bottom: none; }
+.sync-item.cur { color: var(--c-text); }
+
+.sync-ck {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--c-border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .3s;
+}
+.sync-ck.done { border-color: var(--c-green); background: var(--c-green); }
+.sync-ck.spin { border-color: var(--c-accent); border-top-color: transparent; animation: rot .7s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.sb-wrap { height: 4px; background: var(--c-raised); border-radius: 100px; margin-top: 4px; overflow: hidden; }
+.sb-fill { height: 100%; background: var(--c-accent); border-radius: 100px; transition: width .6s; }
+
+/* ─────────────────────────────────────────────────
+   MOBILE NAV
+───────────────────────────────────────────────── */
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  display: none;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 200;
+}
+
+.mobile-nav button {
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-text-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.mobile-nav button:active {
+  color: var(--c-accent);
+}
+
+/* ─────────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .dash-wrap { grid-template-columns: 1fr; }
+  .dash-aside { display: none; }
+  .analytics-wrap { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .chart-card.full { grid-column: auto; }
+  .goals-wrap { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+}
+@media (max-width: 860px) {
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .feat-grid { grid-template-columns: repeat(2, 1fr); }
+  .settings-cols { grid-template-columns: 1fr; }
+  .land-hero { grid-template-columns: 1fr; }
+  .hero-preview { display: none; }
+  .land-nav, .trust-strip, .feat-section, .cta-band, .land-foot { padding-left: 24px; padding-right: 24px; }
+  .cta-band { margin-left: 24px; margin-right: 24px; }
+}
+@media (max-width: 700px) {
+  .app.on { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding-bottom: 70px; }
+  .dash-wrap, .analytics-wrap, .goals-wrap, .txn-page, .settings-wrap { padding: var(--pad-y) var(--pad-x); }
+  .topbar { padding: var(--pad-y) var(--pad-x) 0; }
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .goals-wrap { grid-template-columns: 1fr; }
+  .feat-grid { grid-template-columns: 1fr; }
+
+  .mobile-nav {
+    display: flex;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════
+     LANDING
+══════════════════════════ -->
+<div id="pg-land" class="pg on">
+  <nav class="land-nav">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="logo-box">খ</div>
+      <span class="logo-name">Khoroch</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" onclick="G.nav('pg-auth')">Sign in</button>
+      <button class="btn btn-primary" onclick="G.nav('pg-auth')">Get started</button>
+    </div>
+  </nav>
+
+  <div class="land-hero">
+    <div>
+      <div class="hero-eyebrow">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+        Real-time bKash analytics
+      </div>
+      <h1 class="hero-h1">Understand<br>where your<br><em>money goes.</em></h1>
+      <p class="hero-sub">A calm, intelligent way to track your daily bKash spending. Know your financial health — every morning.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-primary btn-lg" onclick="G.nav('pg-connect')">Connect bKash</button>
+        <button class="btn btn-ghost btn-lg" onclick="G.demoLogin()">View demo</button>
+      </div>
+      <p class="hero-note">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Read-only access · No passwords stored · Encrypted connection
+      </p>
+    </div>
+    <div class="hero-preview">
+      <div class="prev-shell">
+        <div class="prev-topbar">
+          <div class="prev-dots">
+            <div class="prev-dot" style="background:#F87171;"></div>
+            <div class="prev-dot" style="background:#FBBF24;"></div>
+            <div class="prev-dot" style="background:#34D399;"></div>
+          </div>
+          <span style="font-size:11px;font-weight:600;padding:3px 10px;background:var(--c-green-dim);color:var(--c-green);border-radius:11px;">On track</span>
+        </div>
+        <div class="prev-body">
+          <div class="prev-lbl">May 2025 · Budget</div>
+          <div class="prev-amt">৳12,450</div>
+          <div class="prev-sub">of ৳20,000 · 18 days remaining</div>
+          <div class="prev-prog"><div class="prev-fill"></div></div>
+          <div class="prev-cats">
+            <div class="prev-cat"><div class="prev-clbl">Food</div><div class="prev-camt">৳4,820</div><div class="prev-cbar"><div class="prev-cf" style="background:var(--c-accent);width:80%"></div></div></div>
+            <div class="prev-cat"><div class="prev-clbl">Transport</div><div class="prev-camt">৳2,310</div><div class="prev-cbar"><div class="prev-cf" style="background:var(--c-blue);width:46%"></div></div></div>
+            <div class="prev-cat"><div class="prev-clbl">Shopping</div><div class="prev-camt">৳3,100</div><div class="prev-cbar"><div class="prev-cf" style="background:var(--c-amber);width:62%"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trust-strip">
+    <div class="trust-inner">
+      <div class="trust-i"><div class="trust-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-green)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>Secure Connection</div>
+      <div class="trust-i"><div class="trust-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-blue)" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>Read-only Access</div>
+      <div class="trust-i"><div class="trust-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-plum)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>Private Analytics</div>
+      <div class="trust-i"><div class="trust-ico" style="font-weight:800;font-size:11px;color:var(--c-accent);">bK</div>Powered by bKash</div>
+    </div>
+  </div>
+
+  <section class="feat-section">
+    <div class="sect-eyebrow">Features</div>
+    <h2 class="sect-h2">Built for how Bangladeshis actually spend</h2>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-ico" style="background:var(--c-accent-dim);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="feat-nm">Spending Analysis</div><div class="feat-dc">Understand patterns across merchants, categories, and time. Know where every taka goes.</div></div>
+      <div class="feat-card"><div class="feat-ico" style="background:var(--c-green-dim);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-green)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="feat-nm">Smart Limits</div><div class="feat-dc">Set monthly budgets per category. Get notified before you overspend — not after.</div></div>
+      <div class="feat-card"><div class="feat-ico" style="background:var(--c-blue-dim);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-blue)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="feat-nm">Weekly Insights</div><div class="feat-dc">Every Sunday, a clear summary of your week — what changed, what to watch.</div></div>
+      <div class="feat-card"><div class="feat-ico" style="background:var(--c-amber-dim);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-amber)" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg></div><div class="feat-nm">Goal Tracking</div><div class="feat-dc">Save toward a laptop, Eid gifts, or an emergency fund. Watch progress in real time.</div></div>
+      <div class="feat-card"><div class="feat-ico" style="background:#f0eaf5;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-plum)" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div class="feat-nm">Merchant Intelligence</div><div class="feat-dc">See which merchants you visit most and detect recurring payments automatically.</div></div>
+      <div class="feat-card"><div class="feat-ico" style="background:var(--c-raised);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-3)" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div><div class="feat-nm">Monthly Reports</div><div class="feat-dc">A clear, honest monthly review. Compare months, track trends, understand your trajectory.</div></div>
+    </div>
+  </section>
+
+  <div class="cta-band">
+    <h2 class="cta-h">Start understanding your money.</h2>
+    <p class="cta-s">Takes 2 minutes to connect. Works immediately.</p>
+    <button class="btn btn-white btn-lg" onclick="G.nav('pg-connect')">Connect bKash — it's free</button>
+  </div>
+
+  <footer class="land-foot">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="logo-box" style="width:24px;height:24px;font-size:11px;">খ</div>
+      <span style="font-size:14px;font-weight:700;color:var(--c-text);">Khoroch</span>
+    </div>
+    <span>© 2025 Khoroch. Built for Bangladesh.</span>
+    <div style="display:flex;gap:20px;">
+      <a href="#" style="color:var(--c-text-3);">Privacy</a>
+      <a href="#" style="color:var(--c-text-3);">Security</a>
+      <a href="#" style="color:var(--c-text-3);">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════
+     AUTH
+══════════════════════════ -->
+<div id="pg-auth" class="pg">
+  <div class="ctr-pg">
+    <div class="auth-box">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+        <div class="logo-box">খ</div><span class="logo-name">Khoroch</span>
+      </div>
+      <div style="font-size:21px;font-weight:700;letter-spacing:-.4px;margin-bottom:5px;">Welcome back</div>
+      <div style="font-size:14px;color:var(--c-text-3);margin-bottom:24px;">Sign in to your financial dashboard.</div>
+
+      <div class="f-mb">
+        <label class="f-lbl">Phone number</label>
+        <div class="f-group"><span class="f-pfx">🇧🇩 +880</span><input type="tel" placeholder="01XXXXXXXXX"></div>
+      </div>
+      <div class="f-mb" style="margin-bottom:20px;">
+        <label class="f-lbl">Password</label>
+        <input type="password" class="f-input" placeholder="Enter your password">
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="G.doLogin()">Sign in</button>
+      <div class="auth-sep">or</div>
+      <button class="btn btn-ghost btn-full" onclick="G.nav('pg-connect')">Connect a new bKash account</button>
+      <p style="text-align:center;font-size:13px;color:var(--c-text-3);margin-top:18px;">No account? <a onclick="G.nav('pg-connect')" style="color:var(--c-accent);font-weight:500;cursor:pointer;">Get started</a></p>
+      <p style="text-align:center;margin-top:12px;"><a onclick="G.nav('pg-land')" style="font-size:13px;color:var(--c-text-3);cursor:pointer;">← Back to home</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     CONNECT FLOW
+══════════════════════════ -->
+<div id="pg-connect" class="pg">
+  <div class="ctr-pg">
+    <div class="conn-box">
+      <div class="conn-head">
+        <div class="step-dots">
+          <div class="sd cur" id="sd0"></div><div class="sd" id="sd1"></div><div class="sd" id="sd2"></div><div class="sd" id="sd3"></div>
+        </div>
+        <div style="font-size:18px;font-weight:700;letter-spacing:-.3px;" id="cTitle">Verify your number</div>
+        <div style="font-size:13px;color:var(--c-text-3);margin-top:5px;" id="cSub">Enter your bKash-registered number to begin.</div>
+      </div>
+
+      <div class="conn-body">
+        <div class="conn-step on" id="cs0">
+          <div class="f-mb">
+            <label class="f-lbl">bKash number</label>
+            <div class="f-group"><span class="f-pfx">🇧🇩 +880</span><input type="tel" placeholder="01XXXXXXXXX"></div>
+          </div>
+          <div class="f-mb">
+            <label class="f-lbl">Your name</label>
+            <input type="text" class="f-input" value="Rafiq Hossain">
+          </div>
+          <p style="font-size:12px;color:var(--c-text-3);line-height:1.6;margin-top:8px;">We'll send an OTP to verify. Your PIN is never shared with Khoroch.</p>
+        </div>
+
+        <div class="conn-step" id="cs1">
+          <p style="font-size:13.5px;color:var(--c-text-2);margin-bottom:14px;">Khoroch requests the following read-only permissions:</p>
+          <div class="perm-list">
+            <div class="perm-item"><div class="perm-ico" style="background:var(--c-green-dim);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>Transaction history (read-only)</div>
+            <div class="perm-item"><div class="perm-ico" style="background:var(--c-green-dim);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>Account balance visibility</div>
+            <div class="perm-item" style="opacity:.6;"><div class="perm-ico" style="background:var(--c-raised);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-3)" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>No payment or transfer access</div>
+            <div class="perm-item" style="opacity:.6;"><div class="perm-ico" style="background:var(--c-raised);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-3)" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>No PIN or password access</div>
+          </div>
+        </div>
+
+        <div class="conn-step" id="cs2">
+          <div class="sync-list">
+            <div class="sync-item" id="si0"><div class="sync-ck done" id="sk0"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Authenticating with bKash</div>
+            <div class="sync-item" id="si1"><div class="sync-ck" id="sk1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Fetching 90 days of transactions</div>
+            <div class="sync-item" id="si2"><div class="sync-ck" id="sk2"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Categorizing merchants</div>
+            <div class="sync-item" id="si3"><div class="sync-ck" id="sk3"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Building your analytics</div>
+          </div>
+          <div class="sb-wrap"><div class="sb-fill" id="sbar" style="width:25%"></div></div>
+        </div>
+
+        <div class="conn-step" id="cs3">
+          <div style="text-align:center;padding:16px 0;">
+            <div style="width:56px;height:56px;background:var(--c-green-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--c-green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div style="font-size:19px;font-weight:700;margin-bottom:7px;">You're all set!</div>
+            <div style="font-size:14px;color:var(--c-text-3);line-height:1.65;">152 transactions synced · 4 categories detected<br>Your dashboard is ready.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="conn-foot">
+        <button class="btn btn-primary btn-full" id="connBtn" onclick="G.connectNext()">Continue</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="G.nav('pg-land')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     APP SHELL
+══════════════════════════ -->
+<div id="pg-app" class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="logo-box">খ</div>
+      <span class="logo-name">Khoroch</span>
+    </div>
+    <nav class="sb-nav">
+      <button class="sb-btn on" onclick="G.inner('dashboard',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+      </button>
+      <button class="sb-btn" onclick="G.inner('transactions',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Transactions
+      </button>
+      <button class="sb-btn" onclick="G.inner('analytics',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Analytics
+      </button>
+      <button class="sb-btn" onclick="G.inner('goals',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>Goals
+      </button>
+      <div class="sb-sect">Account</div>
+      <button class="sb-btn" onclick="G.inner('settings',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
+      </button>
+    </nav>
+    <div class="sync-strip">
+      <div class="sync-dot"></div>
+      <span>Synced 2 mins ago · Read-only</span>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-user" onclick="G.nav('pg-land')">
+        <div class="u-avatar">RH</div>
+        <div style="flex:1;min-width:0;">
+          <div class="u-name">Rafiq Hossain</div>
+          <div class="u-phone">01712-345678</div>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-3)" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="inner on" id="ip-dashboard">
+      <div class="topbar">
+        <div>
+          <div class="tb-title">Good morning, Rafiq.</div>
+          <div class="tb-sub">Sunday, 4 May 2025 — এই মাসে আপনি কেমন করছেন?</div>
+        </div>
+        <div class="tb-acts">
+          <button class="btn btn-ghost">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Alerts <span class="sb-badge">2</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dash-wrap">
+        <div class="dash-main">
+
+          <!-- ROW 1: Status -->
+          <div class="status-card">
+            <div class="sc-head">
+              <div>
+                <div class="sc-label">May 2025 · Monthly Budget</div>
+                <div class="sc-amount"><span class="tk">৳</span>12,450</div>
+                <div class="sc-bn">এই মাসে ৳12,450 খরচ হয়েছে</div>
+                <div class="sc-pace" style="margin-top:10px;">
+                  At your current pace you'll spend approximately <strong>৳18,900</strong> this month — <strong>৳1,100 under budget.</strong>
+                </div>
+              </div>
+              <div style="flex-shrink:0;text-align:right;">
+                <span class="badge badge-ok">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  On track
+                </span>
+                <div class="badge badge-muted" style="display:flex;margin-top:7px;justify-content:flex-end;">18 days left</div>
+              </div>
+            </div>
+
+            <div class="prog-labels">
+              <span>৳0</span><span>62% · ৳12,450 spent</span><span>৳20,000</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill pf-accent" style="width:62%"></div>
+            </div>
+
+            <div class="sc-stats">
+              <div class="stat"><div class="stat-lbl">Today</div><div class="stat-val">৳640</div></div>
+              <div class="stat"><div class="stat-lbl">This week</div><div class="stat-val">৳2,870</div></div>
+              <div class="stat"><div class="stat-lbl">Daily avg.</div><div class="stat-val">৳690</div></div>
+            </div>
+          </div>
+
+          <!-- Safe to spend -->
+          <div class="safe-card">
+            <div>
+              <div class="safe-lbl">Safe to spend this week</div>
+              <div class="safe-amt">৳4,200</div>
+              <div class="safe-sub">Based on remaining budget and current pace</div>
+            </div>
+            <div class="safe-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+          </div>
+
+          <!-- ROW 2: Categories -->
+          <div>
+            <div class="group-label">Top Categories This Month</div>
+            <div class="cat-grid">
+              <div class="cat-card">
+                <div class="cat-ico" style="background:var(--c-accent-dim);">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                </div>
+                <div class="cat-name">Food &amp; Dining</div>
+                <div class="cat-amt">৳4,820</div>
+                <div class="cat-delta delta-up"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>12% vs last month</div>
+                <div class="cat-bar"><div class="cat-bar-f" style="background:var(--c-accent);width:80%"></div></div>
+              </div>
+              <div class="cat-card">
+                <div class="cat-ico" style="background:var(--c-blue-dim);">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-blue)" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </div>
+                <div class="cat-name">Transport</div>
+                <div class="cat-amt">৳2,310</div>
+                <div class="cat-delta delta-dn"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>5% vs last month</div>
+                <div class="cat-bar"><div class="cat-bar-f" style="background:var(--c-blue);width:46%"></div></div>
+              </div>
+              <div class="cat-card">
+                <div class="cat-ico" style="background:var(--c-amber-dim);">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-amber)" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </div>
+                <div class="cat-name">Shopping</div>
+                <div class="cat-amt">৳3,100</div>
+                <div class="cat-delta delta-up"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>28% vs last month</div>
+                <div class="cat-bar"><div class="cat-bar-f" style="background:var(--c-amber);width:62%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 3: Transactions -->
+          <div>
+            <div class="group-label">
+              Recent Transactions
+              <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="G.inner('transactions',document.querySelectorAll('.sb-btn')[1])">View all</button>
+            </div>
+            <div class="card" style="overflow:hidden;"><div id="dash-txns"></div></div>
+          </div>
+        </div>
+
+        <!-- ASIDE -->
+        <div class="dash-aside">
+          <div class="group-label">Financial Insights</div>
+
+          <div class="insight-card">
+            <div class="i-type" style="color:var(--c-amber);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Spending Alert
+            </div>
+            <div class="i-text">Food spending is <strong>12% above</strong> last month. You've ordered delivery 9 times this month. Consider cooking at home to save approximately ৳800.</div>
+            <div class="i-link">Set food limit →</div>
+          </div>
+
+          <div class="insight-card">
+            <div class="i-type" style="color:var(--c-blue);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Pattern Detected
+            </div>
+            <div class="i-text">Weekend spending is <strong>22% higher</strong> than weekdays. Saturday afternoons are your peak spend window.</div>
+          </div>
+
+          <div class="insight-card">
+            <div class="i-type" style="color:var(--c-green);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              On Track
+            </div>
+            <div class="i-text">Transport spending is on pace — <strong>46% of budget used</strong> with 18 days remaining. You're likely to finish under-budget.</div>
+          </div>
+
+          <div class="insight-card">
+            <div class="i-type" style="color:var(--c-plum);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
+              Goal Update
+            </div>
+            <div class="i-text">Emergency Fund is <strong>68% complete</strong>. At current contribution rate, you'll reach your target by September 2025.</div>
+            <div class="i-link" onclick="G.inner('goals',document.querySelectorAll('.sb-btn')[3])">View goals →</div>
+          </div>
+
+          <div class="group-label" style="margin-top:8px;">Account Overview</div>
+          <div class="card card-ps">
+            <div class="bal-row"><div class="bal-lbl">bKash Balance</div><div class="bal-val">৳7,550</div></div>
+            <div class="bal-row"><div class="bal-lbl">Monthly inflow</div><div class="bal-val" style="color:var(--c-green);">+৳22,000</div></div>
+            <div class="bal-row"><div class="bal-lbl">Remaining budget</div><div class="bal-val">৳7,550</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="inner" id="ip-transactions">
+      <div class="topbar">
+        <div><div class="tb-title">Transactions</div><div class="tb-sub">152 transactions · May 2025</div></div>
+        <div class="tb-acts"><button class="btn btn-ghost">Export CSV</button></div>
+      </div>
+      <div class="txn-page">
+        <div class="filter-bar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="f-search" type="text" placeholder="Search merchants, amounts..." oninput="G.search(this.value)">
+          <div class="f-sep"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="chip on" onclick="G.cat(this,'All')">All</button>
+            <button class="chip" onclick="G.cat(this,'Food')">Food</button>
+            <button class="chip" onclick="G.cat(this,'Transport')">Transport</button>
+            <button class="chip" onclick="G.cat(this,'Shopping')">Shopping</button>
+            <button class="chip" onclick="G.cat(this,'Bills')">Bills</button>
+          </div>
+        </div>
+        <div class="card" style="overflow:hidden;"><div id="full-txns"></div></div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="inner" id="ip-analytics">
+      <div class="topbar">
+        <div><div class="tb-title">Analytics</div><div class="tb-sub">Understanding your spending patterns</div></div>
+        <div class="tb-acts">
+          <select class="btn btn-ghost" style="cursor:pointer;">
+            <option>Last 30 days</option><option>Last 3 months</option><option>Last 6 months</option>
+          </select>
+        </div>
+      </div>
+      <div class="analytics-wrap">
+        <div class="chart-card full">
+          <div class="ch-head">
+            <div><div class="ch-title">Monthly Spending Trend</div><div class="ch-desc">Total spend vs budget over 6 months</div></div>
+          </div>
+          <div style="height:220px;"><canvas id="ch-trend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="ch-head"><div><div class="ch-title">Category Breakdown</div><div class="ch-desc">May 2025</div></div></div>
+          <div style="height:210px;"><canvas id="ch-cat"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="ch-head"><div><div class="ch-title">Weekday Pattern</div><div class="ch-desc">Average spend by day of week</div></div></div>
+          <div style="height:210px;"><canvas id="ch-wk"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="ch-head"><div><div class="ch-title">Top Merchants</div><div class="ch-desc">By total spend this month</div></div></div>
+          <div id="merch-list" style="padding-top:4px;"></div>
+        </div>
+        <div class="chart-card">
+          <div class="ch-head"><div><div class="ch-title">Spending Forecast</div><div class="ch-desc">Projected month-end at current pace</div></div></div>
+          <div style="height:210px;"><canvas id="ch-fc"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="inner" id="ip-goals">
+      <div class="topbar">
+        <div><div class="tb-title">Savings Goals</div><div class="tb-sub">Tracking your financial targets</div></div>
+        <div class="tb-acts"><button class="btn btn-primary"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Goal</button></div>
+      </div>
+      <div class="goals-wrap" id="goals-grid"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="inner" id="ip-settings">
+      <div class="topbar">
+        <div><div class="tb-title">Settings</div><div class="tb-sub">Customize your Khoroch experience</div></div>
+      </div>
+      <div class="settings-wrap">
+        <div class="settings-cols">
+          <div>
+            <div class="sg">
+              <div class="sg-head"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications</div>
+              <div class="sg-row"><div><div class="sg-lbl">Budget alerts</div><div class="sg-desc">Notify when 80% of a category limit is reached</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Daily summary</div><div class="sg-desc">Evening recap of the day's spending</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Large transaction alert</div><div class="sg-desc">Flag transactions above ৳2,000</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Weekly report</div><div class="sg-desc">Sent every Sunday morning</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="sg">
+              <div class="sg-head"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>Appearance</div>
+              <div class="sg-row"><div><div class="sg-lbl">Language</div></div><select class="btn btn-ghost" style="font-size:13px;padding:7px 10px;"><option>English</option><option>বাংলা</option></select></div>
+              <div class="sg-row"><div><div class="sg-lbl">Currency display</div></div><select class="btn btn-ghost" style="font-size:13px;padding:7px 10px;"><option>৳ BDT</option><option>$ USD</option></select></div>
+            </div>
+          </div>
+          <div>
+            <div class="sg">
+              <div class="sg-head"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Budget Limits</div>
+              <div class="sg-row"><div><div class="sg-lbl">Monthly budget</div><div class="sg-desc">Overall spending limit</div></div><div class="budget-fld"><span class="budget-sym">৳</span><input type="number" class="budget-inp" value="20000"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Food &amp; Dining</div></div><div class="budget-fld"><span class="budget-sym">৳</span><input type="number" class="budget-inp" value="6000"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Transport</div></div><div class="budget-fld"><span class="budget-sym">৳</span><input type="number" class="budget-inp" value="5000"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Shopping</div></div><div class="budget-fld"><span class="budget-sym">৳</span><input type="number" class="budget-inp" value="4000"></div></div>
+            </div>
+            <div class="sg">
+              <div class="sg-head"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Privacy &amp; Security</div>
+              <div class="sg-row"><div><div class="sg-lbl">App lock (PIN)</div><div class="sg-desc">Require PIN to open Khoroch</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Anonymous analytics</div><div class="sg-desc">Help improve Khoroch anonymously</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+              <div class="sg-row"><div><div class="sg-lbl">Auto-sync every 6 hours</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+          <button class="btn btn-primary">Save changes</button>
+          <button class="btn btn-ghost">Reset to defaults</button>
+          <button class="btn btn-ghost" style="margin-left:auto;color:var(--c-accent);" onclick="G.nav('pg-land')">Sign out</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <nav class="mobile-nav">
+    <button onclick="G.inner('dashboard')">Home</button>
+    <button onclick="G.inner('transactions')">Txns</button>
+    <button onclick="G.inner('analytics')">Stats</button>
+    <button onclick="G.inner('goals')">Goals</button>
+    <button onclick="G.inner('settings')">Settings</button>
+  </nav>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   DATA STORE — Single source of truth
+══════════════════════════════════════════ */
+
+const MERCHANTS = [
+  {id:'foodpanda',   name:'Foodpanda',        cat:'Food',      bg:'#FFF0F5', fg:'#C8005E', init:'FP', recur:true },
+  {id:'pathao',      name:'Pathao Ride',       cat:'Transport', bg:'#FFF0F3', fg:'#C83050', init:'PR'            },
+  {id:'chaldal',     name:'Chaldal',           cat:'Shopping',  bg:'#EEF9F2', fg:'#276640', init:'CH', recur:true },
+  {id:'uber',        name:'Uber',              cat:'Transport', bg:'#F0F0F0', fg:'#282828', init:'UB'            },
+  {id:'daraz',       name:'Daraz',             cat:'Shopping',  bg:'#FFF5F0', fg:'#C03010', init:'DZ'            },
+  {id:'aarong',      name:'Aarong',            cat:'Shopping',  bg:'#FDF3E3', fg:'#8B5010', init:'AR'            },
+  {id:'bkash-co',    name:'bKash Cash Out',    cat:'Bills',     bg:'#FCEAF3', fg:'#C20060', init:'bK'            },
+  {id:'gp',          name:'Grameenphone',      cat:'Bills',     bg:'#EEF4FF', fg:'#1A50A8', init:'GP', recur:true },
+  {id:'pathao-food', name:'Pathao Food',       cat:'Food',      bg:'#FFF0F3', fg:'#C83050', init:'PF'            },
+  {id:'nagad',       name:'Nagad Transfer',    cat:'Bills',     bg:'#FFF4E6', fg:'#A85000', init:'NG'            },
+  {id:'khaas',       name:'Khaas Food',        cat:'Food',      bg:'#F5F5F3', fg:'#484848', init:'KF'            },
+  {id:'shohoz',      name:'Shohoz',            cat:'Transport', bg:'#EEF9F2', fg:'#1B6840', init:'SH'            },
+  {id:'meena',       name:'Meena Bazar',       cat:'Shopping',  bg:'#FFF8E6', fg:'#705000', init:'MB'            },
+  {id:'cafe-mango',  name:'Café Mango',        cat:'Food',      bg:'#EEF9F4', fg:'#246050', init:'CM'            },
+  {id:'shajgoj',     name:'Shajgoj',           cat:'Shopping',  bg:'#F5F0FF', fg:'#5030A0', init:'SJ'            },
+];
+
+const CAT_COLOR = {
+  Food:      {text:'var(--c-accent)', bg:'var(--c-accent-dim)'},
+  Transport: {text:'var(--c-blue)',   bg:'var(--c-blue-dim)'  },
+  Shopping:  {text:'var(--c-amber)', bg:'var(--c-amber-dim)' },
+  Bills:     {text:'var(--c-green)', bg:'var(--c-green-dim)' },
+};
+
+const GOALS_DATA = [
+  {name:'Emergency Fund', target:50000, saved:34000, color:'#3D7455', eta:'Sep 2025'},
+  {name:'Laptop Fund',    target:80000, saved:31200, color:'#2D52CC', eta:'Dec 2025'},
+  {name:'Eid Gifts',      target:10000, saved:7800,  color:'#E2136E', eta:'Apr 2026'},
+  {name:'Tuition Savings',target:120000,saved:48000, color:'#A06418', eta:'Jun 2026'},
+  {name:'Vacation Fund',  target:40000, saved:9600,  color:'#6B3553', eta:'Dec 2026'},
+  {name:'New Phone',      target:55000, saved:22000, color:'#2D52CC', eta:'Mar 2026'},
+];
+
+// Deterministic transaction generation
+function buildTxns() {
+  const out = [];
+  for (let d = 0; d < 28; d++) {
+    const dt = new Date(2025, 4, 4 - d);
+    const n = d === 0 ? 2 : 2 + (d % 3);
+    for (let i = 0; i < n; i++) {
+      const m = MERCHANTS[(d * 5 + i * 7) % MERCHANTS.length];
+      const amtMap = {Food:[80,800], Transport:[40,360], Shopping:[180,2200], Bills:[100,1400]};
+      const [lo, hi] = amtMap[m.cat];
+      const amt = lo + Math.floor(((d * 31 + i * 19) % 97) / 97 * (hi - lo));
+      out.push({
+        id: out.length,
+        m,
+        amt,
+        date: new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 8 + ((d + i * 3) % 13), (i * 17 + d * 5) % 60),
+      });
+    }
+  }
+  return out.sort((a, b) => b.date - a.date);
+}
+
+const ALL = buildTxns();
+
+/* ══════════════════════════════════════════
+   RENDER HELPERS
+══════════════════════════════════════════ */
+
+function dateGroup(d) {
+  if (d.toDateString() === new Date(2025,4,4).toDateString()) return 'Today';
+  if (d.toDateString() === new Date(2025,4,3).toDateString()) return 'Yesterday';
+  const diff = Math.floor((new Date(2025,4,4) - d) / 86400000);
+  if (diff < 7) return 'Earlier This Week';
+  return d.toLocaleDateString('en-BD', {weekday:'long', month:'short', day:'numeric'});
+}
+
+function fmtTime(d) {
+  return d.toLocaleTimeString('en', {hour:'2-digit', minute:'2-digit', hour12:true});
+}
+
+function txnHTML(t) {
+  const cc = CAT_COLOR[t.m.cat] || {text:'var(--c-text-3)', bg:'var(--c-raised)'};
+  return `<div class="txn-row">
+    <div class="merch-ico" style="background:${t.m.bg};color:${t.m.fg};">${t.m.init}</div>
+    <div class="txn-body">
+      <div class="txn-name">${t.m.name}</div>
+      <div class="txn-meta">
+        <span class="cat-pill" style="color:${cc.text};background:${cc.bg};">${t.m.cat}</span>
+        ${t.m.recur ? '<span class="recur-pill">Recurring</span>' : ''}
+      </div>
+    </div>
+    <div class="txn-right">
+      <div class="txn-amt">−৳${t.amt.toLocaleString()}</div>
+      <div class="txn-time">${fmtTime(t.date)}</div>
+    </div>
+  </div>`;
+}
+
+function renderTxns(containerId, list, limit) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const data = limit ? list.slice(0, limit) : list;
+  if (!data.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--c-text-3);">
+      <div style="font-size:15px;font-weight:500;margin-bottom:5px;">No transactions found</div>
+      <div style="font-size:13px;">Try adjusting your filter or search.</div></div>`;
+    return;
+  }
+  let html = '', lastG = '';
+  data.forEach(t => {
+    const g = dateGroup(t.date);
+    if (g !== lastG) { html += `<div class="txn-date-hdr">${g}</div>`; lastG = g; }
+    html += txnHTML(t);
+  });
+  el.innerHTML = html;
+}
+
+function renderGoals() {
+  const el = document.getElementById('goals-grid');
+  if (!el) return;
+  const icons = ['🛡️','💻','🎁','🎓','✈️','📱'];
+  el.innerHTML = GOALS_DATA.map((g, i) => {
+    const pct = Math.round((g.saved / g.target) * 100);
+    const R = 37, c = 2 * Math.PI * R;
+    const fill = (pct / 100) * c;
+    return `<div class="goal-card">
+      <div class="goal-ring-wrap">
+        <div class="goal-ring">
+          <svg width="92" height="92" viewBox="0 0 92 92">
+            <circle cx="46" cy="46" r="${R}" fill="none" stroke="var(--c-raised)" stroke-width="7"/>
+            <circle cx="46" cy="46" r="${R}" fill="none" stroke="${g.color}" stroke-width="7"
+              stroke-dasharray="${fill.toFixed(1)} ${c.toFixed(1)}" stroke-linecap="round"/>
+          </svg>
+          <div class="goal-ring-inner">
+            <div class="g-pct">${pct}%</div>
+            <div class="g-lbl">saved</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:20px;margin-bottom:6px;">${icons[i]}</div>
+      <div class="g-name">${g.name}</div>
+      <div class="g-meta">
+        <div><div class="gm-lbl">Saved</div><div class="gm-val">৳${g.saved.toLocaleString()}</div></div>
+        <div style="text-align:center"><div class="gm-lbl">Target</div><div class="gm-val">৳${g.target.toLocaleString()}</div></div>
+        <div style="text-align:right"><div class="gm-lbl">ETA</div><div class="gm-val">${g.eta}</div></div>
+      </div>
+      <div class="g-bar"><div class="g-bar-f" style="width:${pct}%;background:${g.color};"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════ */
+
+Chart.defaults.font.family = "'Inter', 'Hind Siliguri', sans-serif";
+Chart.defaults.color = '#737373';
+Chart.defaults.plugins.legend.display = false;
+
+let chartsReady = false;
+
+const CH_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: {duration: 500},
+  plugins: { legend: {display:false} },
+};
+
+function buildCharts() {
+  if (chartsReady) return;
+  chartsReady = true;
+
+  // Trend line
+  new Chart(document.getElementById('ch-trend'), {
+    type: 'line',
+    data: {
+      labels: ['Dec','Jan','Feb','Mar','Apr','May*'],
+      datasets: [
+        {label:'Spending', data:[18200,21400,16800,19600,22100,12450],
+         borderColor:'#E2136E', backgroundColor:'rgba(226,19,110,.06)',
+         borderWidth:2, tension:.4, fill:true, pointBackgroundColor:'#E2136E',
+         pointRadius:4, pointHoverRadius:5},
+        {label:'Budget', data:[20000,20000,20000,20000,20000,20000],
+         borderColor:'#D0CECC', borderWidth:1.5, borderDash:[5,5],
+         tension:0, fill:false, pointRadius:0},
+      ]
+    },
+    options: {
+      ...CH_DEFAULTS,
+      plugins: {
+        legend: {display:true, position:'top', labels:{boxWidth:8,usePointStyle:true,padding:16,font:{size:12}}},
+        tooltip: {callbacks:{label:ctx=>`৳${ctx.raw.toLocaleString()}`}},
+      },
+      scales: {
+        x: {grid:{display:false}, border:{display:false}},
+        y: {grid:{color:'#F0EEEC'}, border:{display:false},
+          ticks:{callback:v=>`৳${(v/1000).toFixed(0)}k`}},
+      }
+    }
+  });
+
+  // Category doughnut
+  new Chart(document.getElementById('ch-cat'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Food','Transport','Shopping','Bills','Other'],
+      datasets: [{
+        data:[4820,2310,3100,1620,600],
+        backgroundColor:['#E2136E','#2D52CC','#A06418','#3D7455','#D0CECC'],
+        borderWidth:0, hoverOffset:5,
+      }]
+    },
+    options: {
+      ...CH_DEFAULTS,
+      cutout:'67%',
+      plugins: {
+        legend:{display:true, position:'right', labels:{boxWidth:9,padding:12,font:{size:12}}},
+        tooltip:{callbacks:{label:ctx=>`৳${ctx.raw.toLocaleString()}`}},
+      }
+    }
+  });
+
+  // Weekday bar
+  new Chart(document.getElementById('ch-wk'), {
+    type: 'bar',
+    data: {
+      labels: ['Sat','Sun','Mon','Tue','Wed','Thu','Fri'],
+      datasets: [{
+        data:[1420,1680,580,620,710,690,1100],
+        backgroundColor: ctx => ctx.raw > 1000 ? '#E2136E' : '#E5E4E0',
+        borderRadius: 6, borderSkipped: false,
+      }]
+    },
+    options: {
+      ...CH_DEFAULTS,
+      plugins:{tooltip:{callbacks:{label:ctx=>`৳${ctx.raw.toLocaleString()}`}}},
+      scales: {
+        x:{grid:{display:false}, border:{display:false}},
+        y:{grid:{color:'#F0EEEC'}, border:{display:false},
+          ticks:{callback:v=>`৳${(v/1000).toFixed(1)}k`}},
+      }
+    }
+  });
+
+  // Merchant rank
+  const ranks=[
+    {name:'Foodpanda',   amt:2140,bg:'#FFF0F5',fg:'#C8005E',init:'FP'},
+    {name:'Chaldal',     amt:1820,bg:'#EEF9F2',fg:'#276640',init:'CH'},
+    {name:'Pathao Ride', amt:1560,bg:'#FFF0F3',fg:'#C83050',init:'PR'},
+    {name:'Daraz',       amt:1300,bg:'#FFF5F0',fg:'#C03010',init:'DZ'},
+    {name:'Aarong',      amt:980, bg:'#FDF3E3',fg:'#8B5010',init:'AR'},
+  ];
+  document.getElementById('merch-list').innerHTML = ranks.map((r,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:${i<ranks.length-1?'1px solid var(--c-border)':'none'};">
+      <div class="merch-ico" style="background:${r.bg};color:${r.fg};width:32px;height:32px;border-radius:8px;font-size:10px;">${r.init}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:4px;">${r.name}</div>
+        <div style="height:3px;background:var(--c-raised);border-radius:100px;overflow:hidden;">
+          <div style="width:${Math.round((r.amt/2140)*100)}%;height:100%;background:var(--c-accent);border-radius:100px;"></div>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;flex-shrink:0;">৳${r.amt.toLocaleString()}</div>
+    </div>`).join('');
+
+  // Forecast
+  const days = Array.from({length:31},(_,i)=>i+1);
+  new Chart(document.getElementById('ch-fc'), {
+    type:'line',
+    data:{
+      labels:days,
+      datasets:[
+        {label:'Actual',    data:days.map(d=>d<=4?d*690+200:null),
+         borderColor:'#E2136E',borderWidth:2,tension:.3,pointRadius:0},
+        {label:'Projected', data:days.map(d=>d>=4?Math.min(d*660+300,21200):null),
+         borderColor:'#E2136E',borderWidth:1.5,borderDash:[4,4],tension:.3,pointRadius:0},
+        {label:'Budget',    data:days.map(()=>20000),
+         borderColor:'#D0CECC',borderWidth:1,tension:0,pointRadius:0},
+      ]
+    },
+    options:{
+      ...CH_DEFAULTS,
+      plugins:{
+        legend:{display:true,position:'top',labels:{boxWidth:8,usePointStyle:true,padding:14,font:{size:11}}},
+        tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>`${ctx.dataset.label}: ৳${(ctx.raw||0).toLocaleString()}`}},
+      },
+      scales:{
+        x:{grid:{display:false},border:{display:false},ticks:{callback:(_,i)=>i%6===0?days[i]:'',maxRotation:0}},
+        y:{grid:{color:'#F0EEEC'},border:{display:false},ticks:{callback:v=>`৳${(v/1000).toFixed(0)}k`}},
+      }
+    }
+  });
+}
+
+/* ══════════════════════════════════════════
+   CONTROLLER
+══════════════════════════════════════════ */
+
+const G = (() => {
+  let _catF = 'All';
+  let _q    = '';
+
+  function applyFilter() {
+    let list = ALL;
+    if (_catF !== 'All') list = list.filter(t => t.m.cat === _catF);
+    if (_q) list = list.filter(t => t.m.name.toLowerCase().includes(_q) || String(t.amt).includes(_q));
+    renderTxns('full-txns', list);
+  }
+
+  return {
+    nav(id) {
+      document.querySelectorAll('.pg, .app').forEach(el => el.classList.remove('on'));
+      const el = document.getElementById(id);
+      if (el) el.classList.add('on');
+    },
+
+    inner(id, btn) {
+      document.querySelectorAll('.inner').forEach(el => el.classList.remove('on'));
+      document.querySelectorAll('.sb-btn').forEach(el => el.classList.remove('on'));
+      const el = document.getElementById('ip-' + id);
+      if (el) el.classList.add('on');
+      if (btn) btn.classList.add('on');
+      if (id === 'analytics') setTimeout(buildCharts, 50);
+    },
+
+    doLogin() {
+      this.nav('pg-app');
+      this._init();
+    },
+
+    demoLogin() {
+      this.nav('pg-app');
+      this._init();
+    },
+
+    search(val) {
+      _q = val.toLowerCase();
+      applyFilter();
+    },
+
+    cat(btn, cat) {
+      _catF = cat;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      btn.classList.add('on');
+      applyFilter();
+    },
+
+    _init() {
+      renderTxns('dash-txns', ALL, 9);
+      renderTxns('full-txns', ALL);
+      renderGoals();
+    },
+
+    /* Connect flow */
+    _step: 0,
+    _STEPS: [
+      {title:'Verify your number',   sub:'Enter your bKash-registered number to begin.', btn:'Continue'},
+      {title:'Authorize access',     sub:'Review the permissions Khoroch will request.',   btn:'Authorize & Connect'},
+      {title:'Syncing transactions', sub:'Fetching and categorizing your history.',        btn:'Please wait…'},
+      {title:"You're connected!",    sub:'152 transactions synced. Dashboard is ready.',   btn:'Open Dashboard'},
+    ],
+
+    connectNext() {
+      if (this._step === 2) return;
+      if (this._step === 3) { this.nav('pg-app'); this._init(); return; }
+
+      document.getElementById('cs' + this._step).classList.remove('on');
+      this._step++;
+      document.getElementById('cs' + this._step).classList.add('on');
+
+      const s = this._STEPS[this._step];
+      document.getElementById('cTitle').textContent = s.title;
+      document.getElementById('cSub').textContent   = s.sub;
+      document.getElementById('connBtn').textContent = s.btn;
+
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById('sd' + i);
+        dot.classList.remove('done', 'cur');
+        if (i < this._step)      dot.classList.add('done');
+        if (i === this._step)    dot.classList.add('cur');
+      }
+
+      if (this._step === 2) {
+        document.getElementById('connBtn').disabled = true;
+        this._runSync();
+      }
+    },
+
+    _runSync() {
+      let i = 0;
+      const bar = document.getElementById('sbar');
+      const tick = () => {
+        if (i < 4) {
+          const ck = document.getElementById('sk' + i);
+          ck.classList.remove('spin'); ck.classList.add('done');
+          document.getElementById('si' + i).classList.add('cur');
+          bar.style.width = (25 * (i + 1)) + '%';
+          i++;
+          if (i < 4) { document.getElementById('sk' + i).classList.add('spin'); setTimeout(tick, 850); }
+          else setTimeout(() => this.connectNext(), 400);
+        }
+      };
+      document.getElementById('sk0').classList.add('spin');
+      setTimeout(tick, 700);
+    }
+  };
+})();
+
+// expose connectNext globally for onclick
+function connectNext() { G.connectNext(); }
+</script>
+</body>
+</html>
